@@ -1,4 +1,4 @@
-name: Go
+name: Update Forms Version
 
 on:
   schedule:
@@ -10,7 +10,7 @@ on:
 
 jobs:
 
-  build:
+  update-forms-version:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
