@@ -18,7 +18,7 @@ type FormsInfo struct {
 	Generated  time.Time `json:"_generated"`
 }
 
-const FormsInfoURL = "https://FAILURE"
+const FormsInfoURL = "https://www.winlink.org/content/all_standard_templates_folders_one_zip_self_extracting_winlink_express_ver_12142016"
 
 var client = &http.Client{Timeout: 10 * time.Second}
 
