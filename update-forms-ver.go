@@ -52,7 +52,7 @@ func getLatestFormsInfo() (*FormsInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "pat-forms-scaper")
+	req.Header.Set("User-Agent", "pat-forms-scraper")
 	req.Header.Set("Cache-Control", "no-cache")
 	resp, err := client.Do(req)
 	if err != nil {
