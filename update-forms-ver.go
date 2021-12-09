@@ -18,6 +18,10 @@ type FormsInfo struct {
 	Generated  time.Time `json:"_generated"`
 }
 
+func (f FormsInfo) String() string {
+	return fmt.Sprintf("version: '%s', url: '%s'", f.Version, f.ArchiveURL)
+}
+
 const FormsInfoURL = "https://www.winlink.org/content/all_standard_templates_folders_one_zip_self_extracting_winlink_express_ver_12142016"
 
 var client = &http.Client{Timeout: 10 * time.Second}
@@ -25,8 +29,9 @@ var client = &http.Client{Timeout: 10 * time.Second}
 func main() {
 	latest, err := getLatestFormsInfo()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("could not get latest forms info: %v", err)
 	}
+	log.Printf("Found %s.", latest)
 	if err := verifyURL(latest.ArchiveURL); err != nil {
 		log.Fatalf("could not verify archive url: %v", err)
 	}
