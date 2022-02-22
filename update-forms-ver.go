@@ -23,6 +23,7 @@ func (f FormsInfo) String() string {
 }
 
 const FormsInfoURL = "https://www.winlink.org/content/all_standard_templates_folders_one_zip_self_extracting_winlink_express_ver_12142016"
+const PatFormsAPIPath = "https://api.getpat.io/v1/forms/standard-templates/"
 
 var client = &http.Client{Timeout: 10 * time.Second}
 
@@ -32,24 +33,36 @@ func main() {
 		log.Fatalf("could not get latest forms info: %v", err)
 	}
 	log.Printf("Found %s.", latest)
-	if err := verifyURL(latest.ArchiveURL); err != nil {
-		log.Fatalf("could not verify archive url: %v", err)
+	filename := fmt.Sprintf("Standard_Forms_%s.zip", latest.Version)
+	if err := downloadURL(latest.ArchiveURL, filename); err != nil {
+		log.Fatalf("could not download archive url: %v", err)
 	}
+	patAPIArchiveURL := fmt.Sprintf("%s%s", PatFormsAPIPath, filename)
+	// TODO: replace log statement with actually replacing latest.ArchiveURL
+	log.Printf("New archive URL would be %s", patAPIArchiveURL)
 	json.NewEncoder(os.Stdout).Encode(latest)
 }
 
-func verifyURL(url string) error {
-	resp, err := client.Head(url)
+func downloadURL(url string, filename string) error {
+	resp, err := client.Get(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusFound, http.StatusOK:
-		return nil
+		break
 	default:
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
+
+	out, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
 
 func getLatestFormsInfo() (*FormsInfo, error) {
