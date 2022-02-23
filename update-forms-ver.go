@@ -1,10 +1,13 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -34,7 +37,7 @@ func main() {
 	}
 	log.Printf("Found %s.", latest)
 	filename := fmt.Sprintf("Standard_Forms_%s.zip", latest.Version)
-	if err := downloadURL(latest.ArchiveURL, filename); err != nil {
+	if err := downloadZipURL(latest.ArchiveURL, filename); err != nil {
 		log.Fatalf("could not download archive url: %v", err)
 	}
 	patAPIArchiveURL := fmt.Sprintf("%s%s", PatFormsAPIPath, filename)
@@ -43,7 +46,7 @@ func main() {
 	json.NewEncoder(os.Stdout).Encode(latest)
 }
 
-func downloadURL(url string, filename string) error {
+func downloadZipURL(url string, filename string) error {
 	resp, err := client.Get(url)
 	if err != nil {
 		return err
@@ -56,6 +59,10 @@ func downloadURL(url string, filename string) error {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
+	if err = checkZip(resp.Body); err != nil {
+		return err
+	}
+
 	out, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -63,6 +70,37 @@ func downloadURL(url string, filename string) error {
 	defer out.Close()
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func checkZip(rc io.ReadCloser) error {
+	// https://stackoverflow.com/a/50539327/587091
+	body, err := ioutil.ReadAll(rc)
+	if err != nil {
+		return err
+	}
+
+	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return err
+	}
+
+	// Read all the files from zip archive
+	for _, zipFile := range zipReader.File {
+		if _, err = readZipFile(zipFile); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func readZipFile(zf *zip.File) ([]byte, error) {
+	f, err := zf.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return ioutil.ReadAll(f)
 }
 
 func getLatestFormsInfo() (*FormsInfo, error) {
