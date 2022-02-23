@@ -30,7 +30,7 @@ jobs:
       run: |
         git config --global user.name github-actions
         git config --global user.email github-actions@github.com
-        
+
     - name: Checkout
       uses: actions/checkout@v2
       with:
@@ -40,7 +40,9 @@ jobs:
     - name: Update Forms Version
       run: |
         go run update-forms-ver.go > ghpages/v1/forms/standard-templates/latest
+        rm ghpages/v1/forms/standard-templates/Standard_Forms*.zip
+        mv Standard_Forms*.zip ghpages/v1/forms/standard-templates
         cd ghpages
-        git add v1/forms/standard-templates/latest
+        git add v1/forms/standard-templates/*
         git commit -m "Update form template version"
         git push origin ghpages

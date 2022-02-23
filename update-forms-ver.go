@@ -1,10 +1,13 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -23,6 +26,7 @@ func (f FormsInfo) String() string {
 }
 
 const FormsInfoURL = "https://www.winlink.org/content/all_standard_templates_folders_one_zip_self_extracting_winlink_express_ver_12142016"
+const PatFormsAPIPath = "https://api.getpat.io/v1/forms/standard-templates/"
 
 var client = &http.Client{Timeout: 10 * time.Second}
 
@@ -32,24 +36,71 @@ func main() {
 		log.Fatalf("could not get latest forms info: %v", err)
 	}
 	log.Printf("Found %s.", latest)
-	if err := verifyURL(latest.ArchiveURL); err != nil {
-		log.Fatalf("could not verify archive url: %v", err)
+	filename := fmt.Sprintf("Standard_Forms_%s.zip", latest.Version)
+	if err := downloadZipURL(latest.ArchiveURL, filename); err != nil {
+		log.Fatalf("could not download archive url: %v", err)
 	}
+	patAPIArchiveURL := fmt.Sprintf("%s%s", PatFormsAPIPath, filename)
+	// TODO: replace log statement with actually replacing latest.ArchiveURL
+	log.Printf("New archive URL would be %s", patAPIArchiveURL)
 	json.NewEncoder(os.Stdout).Encode(latest)
 }
 
-func verifyURL(url string) error {
-	resp, err := client.Head(url)
+func downloadZipURL(url string, filename string) error {
+	resp, err := client.Get(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusFound, http.StatusOK:
-		return nil
+		break
 	default:
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
+
+	if err = checkZip(resp.Body); err != nil {
+		return err
+	}
+
+	out, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func checkZip(rc io.ReadCloser) error {
+	// https://stackoverflow.com/a/50539327/587091
+	body, err := ioutil.ReadAll(rc)
+	if err != nil {
+		return err
+	}
+
+	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return err
+	}
+
+	// Read all the files from zip archive
+	for _, zipFile := range zipReader.File {
+		if _, err = readZipFile(zipFile); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func readZipFile(zf *zip.File) ([]byte, error) {
+	f, err := zf.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return ioutil.ReadAll(f)
 }
 
 func getLatestFormsInfo() (*FormsInfo, error) {
