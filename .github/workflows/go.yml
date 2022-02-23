@@ -40,7 +40,7 @@ jobs:
     - name: Update Forms Version
       run: |
         go run update-forms-ver.go > ghpages/v1/forms/standard-templates/latest
-        rm ghpages/v1/forms/standard-templates/Standard_Forms*.zip
+        rm -f ghpages/v1/forms/standard-templates/Standard_Forms*.zip
         mv Standard_Forms*.zip ghpages/v1/forms/standard-templates
         cd ghpages
         git add v1/forms/standard-templates/*
