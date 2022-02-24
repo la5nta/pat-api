@@ -59,7 +59,8 @@ func downloadZipURL(url string, filename string) error {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	if err = checkZip(resp.Body); err != nil {
+	b, err := readAndCheckZip(resp.Body)
+	if err != nil {
 		return err
 	}
 
@@ -68,39 +69,40 @@ func downloadZipURL(url string, filename string) error {
 		return err
 	}
 	defer out.Close()
-	_, err = io.Copy(out, resp.Body)
+	_, err = io.Copy(out, bytes.NewReader(b))
 	return err
 }
 
-func checkZip(rc io.ReadCloser) error {
+func readAndCheckZip(rc io.ReadCloser) ([]byte, error) {
 	// https://stackoverflow.com/a/50539327/587091
 	body, err := ioutil.ReadAll(rc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Read all the files from zip archive
 	for _, zipFile := range zipReader.File {
-		if _, err = readZipFile(zipFile); err != nil {
-			return err
+		if err = readZipFile(zipFile); err != nil {
+			return nil, err
 		}
 	}
 
-	return nil
+	return body, nil
 }
 
-func readZipFile(zf *zip.File) ([]byte, error) {
+func readZipFile(zf *zip.File) error {
 	f, err := zf.Open()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer f.Close()
-	return ioutil.ReadAll(f)
+	_, err = io.Copy(io.Discard, f)
+	return err
 }
 
 func getLatestFormsInfo() (*FormsInfo, error) {
