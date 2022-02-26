@@ -18,7 +18,7 @@ import (
 type FormsInfo struct {
 	Version    string    `json:"version"`
 	ArchiveURL string    `json:"archive_url"`
-	Generated  time.Time `json:"_generated"`
+	Generated  time.Time `json:"-"`
 }
 
 func (f FormsInfo) String() string {
