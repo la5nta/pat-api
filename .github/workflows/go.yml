@@ -43,7 +43,9 @@ jobs:
         rm -f ghpages/v1/forms/standard-templates/Standard_Forms*.zip
         mv Standard_Forms*.zip ghpages/v1/forms/standard-templates
         cd ghpages/v1/forms/standard-templates
-        [ -z "$(git status -s -- .)" ] && exit 0
+        [ -z "$(git status -s -- .)" ] && echo "No changes to be committed. Exiting." && exit 0
+        echo "Commiting changes..."
         git add -- .
         git commit -m "Update form template version"
         git push origin ghpages
+        echo "Done."
