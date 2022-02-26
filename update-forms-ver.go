@@ -40,9 +40,7 @@ func main() {
 	if err := downloadZipURL(latest.ArchiveURL, filename); err != nil {
 		log.Fatalf("could not download archive url: %v", err)
 	}
-	patAPIArchiveURL := fmt.Sprintf("%s%s", PatFormsAPIPath, filename)
-	// TODO: replace log statement with actually replacing latest.ArchiveURL
-	log.Printf("New archive URL would be %s", patAPIArchiveURL)
+	latest.ArchiveURL = fmt.Sprintf("%s%s", PatFormsAPIPath, filename)
 	json.NewEncoder(os.Stdout).Encode(latest)
 }
 
