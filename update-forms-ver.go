@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"io/ioutil"
 	"log"
@@ -129,21 +130,14 @@ func getLatestFormsInfo() (*FormsInfo, error) {
 	bodyString := string(bodyBytes)
 
 	// Scrape for the version and download link
-	versionRe := regexp.MustCompile(`Standard_Forms - Version (\d+\.\d+\.\d+(\.\d+)?)`)
-	downloadRe := regexp.MustCompile(`https://drive.google.com/uc\?export=download&amp;id=([\w-]+)`)
-	versionMatches := versionRe.FindStringSubmatch(bodyString)
-	downloadMatches := downloadRe.FindStringSubmatch(bodyString)
-	log.Println(versionMatches)
-	log.Println(downloadMatches)
-	if versionMatches == nil || len(versionMatches) < 2 || downloadMatches == nil || len(downloadMatches) < 2 {
+	hrefRe := regexp.MustCompile(`<a href="(https://.+)">\s*Standard_Forms - Version (\d+\.\d+\.\d+(\.\d+)?)\s*</a>`)
+	hrefMatches := hrefRe.FindStringSubmatch(bodyString)
+	if len(hrefMatches) < 3 {
 		return nil, errors.New("can't scrape the version info page, HTML structure may have changed")
 	}
-	newestVersion := versionMatches[1]
-	docID := downloadMatches[1]
-	downloadLink := "https://drive.google.com/uc?export=download&id=" + docID
 	return &FormsInfo{
-		Version:    newestVersion,
-		ArchiveURL: downloadLink,
+		Version:    hrefMatches[2],
+		ArchiveURL: html.UnescapeString(hrefMatches[1]),
 		Generated:  time.Now().UTC(),
 	}, nil
 }
