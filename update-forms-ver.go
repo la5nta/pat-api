@@ -38,11 +38,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not get latest forms info: %v", err)
 	}
-	log.Printf("Found %s.", url)
+	log.Printf("Found URL %s", url)
 	latest, err := downloadZipURL(url)
 	if err != nil {
 		log.Fatalf("could not download archive url: %v", err)
 	}
+	log.Printf("Found version %s", latest.Version)
 	_ = json.NewEncoder(os.Stdout).Encode(latest)
 }
 
