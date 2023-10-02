@@ -103,6 +103,7 @@ func readAndCheckZip(rc io.ReadCloser) ([]byte, string, error) {
 			version = strings.TrimSpace(string(ver))
 		}
 
+		// Otherwise, read the file to check for errors but discard the contents
 		if err = readZipFile(zipFile); err != nil {
 			return nil, "", err
 		}
@@ -117,7 +118,7 @@ func readZipFile(zf *zip.File) error {
 		return err
 	}
 	defer f.Close()
-	_, err = io.ReadAll(f)
+	_, err = io.Copy(io.Discard, f)
 	return err
 }
 
