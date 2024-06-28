@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,10 +17,24 @@ import (
 	"time"
 )
 
+// KeepAliveToken represents a unique token per calendar month.
+type KeepAliveToken struct{}
+
+func (g KeepAliveToken) MarshalJSON() ([]byte, error) { return json.Marshal(g.String()) }
+
+func (KeepAliveToken) String() string {
+	// sha1 encoded month of year
+	return fmt.Sprintf("%x", sha1.Sum([]byte{byte(time.Now().Month())}))
+}
+
 type FormsInfo struct {
-	Version    string    `json:"version"`
-	ArchiveURL string    `json:"archive_url"`
-	Generated  time.Time `json:"-"`
+	// We need this to keep the gh action from being disabled due to repo
+	// inactivity if Standard Froms is not updated for a while.
+	// (>= 60 days).
+	GhKeepAlive KeepAliveToken `json:"_gh_keepalive"`
+
+	Version    string `json:"version"`
+	ArchiveURL string `json:"archive_url"`
 }
 
 func (f FormsInfo) String() string {
@@ -75,7 +90,6 @@ func downloadZipURL(url string) (*FormsInfo, error) {
 	return &FormsInfo{
 		Version:    version,
 		ArchiveURL: fmt.Sprintf("%s%s", PatFormsAPIPath, filename),
-		Generated:  time.Now(),
 	}, err
 }
 
