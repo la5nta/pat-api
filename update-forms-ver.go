@@ -11,7 +11,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -63,8 +65,8 @@ func main() {
 	_ = json.NewEncoder(os.Stdout).Encode(latest)
 }
 
-func downloadZipURL(url string) (*FormsInfo, error) {
-	resp, err := client.Get(url)
+func downloadZipURL(zipUrl string) (*FormsInfo, error) {
+	resp, err := client.Get(zipUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +92,7 @@ func downloadZipURL(url string) (*FormsInfo, error) {
 	_, err = io.Copy(out, bytes.NewReader(b))
 	return &FormsInfo{
 		Version:    version,
-		ArchiveURL: fmt.Sprintf("%s%s", PatFormsAPIPath, filename),
+		ArchiveURL: path.Join(PatFormsAPIPath, url.PathEscape(filename)),
 	}, err
 }
 
