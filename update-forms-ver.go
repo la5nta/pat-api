@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // KeepAliveToken represents a unique token per calendar month.
@@ -114,7 +115,8 @@ func readAndCheckZip(rc io.ReadCloser) ([]byte, string, error) {
 			if err != nil {
 				return nil, "", err
 			}
-			version = strings.TrimSpace(string(ver))
+			// strings.TrimSpace is not sufficient. Version 1.1.6.0 was released as `1.1.6\t.0`
+			version = stripSpaces(string(ver))
 		}
 
 		// Otherwise, read the file to check for errors but discard the contents
@@ -124,6 +126,17 @@ func readAndCheckZip(rc io.ReadCloser) ([]byte, string, error) {
 	}
 
 	return body, version, nil
+}
+
+func stripSpaces(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			// if the character is a space, drop it
+			return -1
+		}
+		// else keep it in the string
+		return r
+	}, str)
 }
 
 func readZipFile(zf *zip.File) error {
