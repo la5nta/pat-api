@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -92,7 +91,7 @@ func downloadZipURL(zipUrl string) (*FormsInfo, error) {
 	_, err = io.Copy(out, bytes.NewReader(b))
 	return &FormsInfo{
 		Version:    version,
-		ArchiveURL: path.Join(PatFormsAPIPath, url.PathEscape(filename)),
+		ArchiveURL: PatFormsAPIPath + url.PathEscape(filename),
 	}, err
 }
 
