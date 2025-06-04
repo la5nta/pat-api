@@ -3,7 +3,6 @@ package main
 import (
 	"archive/zip"
 	"bytes"
-	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,16 +17,6 @@ import (
 	"time"
 	"unicode"
 )
-
-// KeepAliveToken represents a unique token per calendar month.
-type KeepAliveToken struct{}
-
-func (g KeepAliveToken) MarshalJSON() ([]byte, error) { return json.Marshal(g.String()) }
-
-func (KeepAliveToken) String() string {
-	// sha1 encoded month of year
-	return fmt.Sprintf("%x", sha1.Sum([]byte{byte(time.Now().Month())}))
-}
 
 type FormsInfo struct {
 	// We need this to keep the gh action from being disabled due to repo
