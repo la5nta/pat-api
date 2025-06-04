@@ -37,9 +37,9 @@ jobs:
         mkdir -p ghpages/v1/forms/standard-templates && go run keepalive.go update-forms-ver.go | tee ghpages/v1/forms/standard-templates/latest
         rm -f ghpages/v1/forms/standard-templates/Standard_Forms*.zip
         mv Standard_Forms*.zip ghpages/v1/forms/standard-templates
-        cd ghpages/v1/forms/standard-templates
-        [ -z "$(git status -s -- .)" ] && echo "No changes to be committed. Exiting." && exit 0
-        echo "Commiting changes..."
+        cd ghpages
+        [ -z "$(git status -s)" ] && echo "No changes to be committed. Exiting." && exit 0
+        echo "Committing changes..."
         git add -- .
         git commit -m "Update form template version"
         git push origin ghpages
