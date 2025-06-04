@@ -40,7 +40,7 @@ const (
 var client = &http.Client{Timeout: 30 * time.Second}
 
 func main() {
-	url, err := getLatestFormsUrl()
+	url, err := getLatestFormsUrl(3)
 	if err != nil {
 		log.Fatalf("could not get latest forms info: %v", err)
 	}
@@ -148,7 +148,11 @@ func readZipFileContents(zf *zip.File) ([]byte, error) {
 	return io.ReadAll(f)
 }
 
-func getLatestFormsUrl() (string, error) {
+func getLatestFormsUrl(retry int) (string, error) {
+	if retry <= 0 {
+		return "", fmt.Errorf("retry limit exceeded")
+	}
+
 	req, err := http.NewRequest("GET", FormsInfoURL, nil)
 	if err != nil {
 		return "", err
@@ -162,7 +166,10 @@ func getLatestFormsUrl() (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		resp.Body.Close()
+		log.Printf("unexpected status code: %d", resp.StatusCode)
+		time.Sleep(time.Second)
+		return getLatestFormsUrl(retry - 1)
 	}
 
 	bodyBytes, err := io.ReadAll(resp.Body)
