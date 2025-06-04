@@ -11,56 +11,59 @@ import (
 )
 
 type Release struct {
-	Version string `json:"version"`
+	Version    string `json:"version"`
+	ReleaseURL string `json:"release_url"`
 
 	// To keep the gh action from being disabled due to repo inactivity
 	GhKeepAlive KeepAliveToken `json:"_gh_keepalive"`
 }
 
 func main() {
-	latestVersion, err := getLatestRelease("la5nta/pat")
+	release, err := getLatestRelease("la5nta/pat")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("Found version %s", latestVersion)
-	_ = json.NewEncoder(os.Stdout).Encode(Release{
-		Version: latestVersion,
-	})
+	log.Printf("Found version %s", release.Version)
+	_ = json.NewEncoder(os.Stdout).Encode(release)
 }
 
-func getLatestRelease(repo string) (string, error) {
+func getLatestRelease(repo string) (Release, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases?per_page=1", repo)
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return "", err
+		return Release{}, err
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return Release{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
+		return Release{}, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
 	}
 
 	var releases []struct {
 		TagName string `json:"tag_name"`
+		HTMLURL string `json:"html_url"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return "", err
+		return Release{}, err
 	}
 
 	if len(releases) == 0 {
-		return "", fmt.Errorf("no releases found")
+		return Release{}, fmt.Errorf("no releases found")
 	}
 
 	// Strip 'v' prefix if present
 	version := strings.TrimPrefix(releases[0].TagName, "v")
-	return version, nil
+	return Release{
+		Version:    version,
+		ReleaseURL: releases[0].HTMLURL,
+	}, nil
 }
