@@ -33,8 +33,8 @@ jobs:
 
     - name: Update Forms Version
       run: |
-        mkdir -p ghpages/v1/releases && go run keepalive.go get-latest-release.go | tee ghpages/v1/releases/latest
-        mkdir -p ghpages/v1/forms/standard-templates && go run keepalive.go update-forms-ver.go | tee ghpages/v1/forms/standard-templates/latest
+        mkdir -p ghpages/v1/releases && go run keepalive.go get-latest-release.go > ghpages/v1/releases/latest
+        mkdir -p ghpages/v1/forms/standard-templates && go run keepalive.go update-forms-ver.go > ghpages/v1/forms/standard-templates/latest
         rm -f ghpages/v1/forms/standard-templates/Standard_Forms*.zip
         mv Standard_Forms*.zip ghpages/v1/forms/standard-templates
         cd ghpages
