@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,7 +38,22 @@ const (
 	PatFormsAPIPath = "https://api.getpat.io/v1/forms/standard-templates/"
 )
 
-var client = &http.Client{Timeout: 30 * time.Second}
+var (
+	client = &http.Client{Timeout: 30 * time.Second}
+
+	// Cloudflare challenges non-browser HTTP/2 requests to downloads.winlink.org.
+	formsTransport = http.DefaultTransport.(*http.Transport).Clone()
+	formsClient    = &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: formsTransport,
+	}
+)
+
+func init() {
+	formsTransport.ForceAttemptHTTP2 = false
+	formsTransport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
+	formsTransport.TLSClientConfig = &tls.Config{NextProtos: []string{"http/1.1"}, MinVersion: tls.VersionTLS12}
+}
 
 func main() {
 	url, err := getLatestFormsUrl(3)
@@ -54,7 +70,13 @@ func main() {
 }
 
 func downloadZipURL(zipUrl string) (*FormsInfo, error) {
-	resp, err := client.Get(zipUrl)
+	req, err := http.NewRequest(http.MethodGet, zipUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36")
+
+	resp, err := formsClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
