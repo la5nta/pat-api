@@ -34,9 +34,10 @@ jobs:
     - name: Update Forms Version
       run: |
         mkdir -p ghpages/v1/releases && go run keepalive.go get-latest-release.go > ghpages/v1/releases/latest
-        mkdir -p ghpages/v1/forms/standard-templates && go run keepalive.go update-forms-ver.go > ghpages/v1/forms/standard-templates/latest
-        rm -f ghpages/v1/forms/standard-templates/Standard_Forms*.zip
-        mv Standard_Forms*.zip ghpages/v1/forms/standard-templates
+        # Forms updates run locally because Cloudflare blocks GitHub-hosted runners.
+        # mkdir -p ghpages/v1/forms/standard-templates && go run keepalive.go update-forms-ver.go > ghpages/v1/forms/standard-templates/latest
+        # rm -f ghpages/v1/forms/standard-templates/Standard_Forms*.zip
+        # mv Standard_Forms*.zip ghpages/v1/forms/standard-templates
         cd ghpages
         [ -z "$(git status -s)" ] && echo "No changes to be committed. Exiting." && exit 0
         echo "Committing changes..."
