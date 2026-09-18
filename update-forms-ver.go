@@ -5,15 +5,12 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"html"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 	"unicode"
@@ -34,13 +31,11 @@ func (f FormsInfo) String() string {
 }
 
 const (
-	FormsInfoURL    = "https://www.winlink.org/content/how_manually_update_standard_templates"
+	FormsArchiveURL = "https://downloads.winlink.org/User%20Programs/Standard_Forms.zip"
 	PatFormsAPIPath = "https://api.getpat.io/v1/forms/standard-templates/"
 )
 
 var (
-	client = &http.Client{Timeout: 30 * time.Second}
-
 	// Cloudflare challenges non-browser HTTP/2 requests to downloads.winlink.org.
 	formsTransport = http.DefaultTransport.(*http.Transport).Clone()
 	formsClient    = &http.Client{
@@ -56,12 +51,8 @@ func init() {
 }
 
 func main() {
-	url, err := getLatestFormsUrl(3)
-	if err != nil {
-		log.Fatalf("could not get latest forms info: %v", err)
-	}
-	log.Printf("Found URL %s", url)
-	latest, err := downloadZipURL(url)
+	log.Printf("Downloading %s", FormsArchiveURL)
+	latest, err := downloadZipURL(FormsArchiveURL)
 	if err != nil {
 		log.Fatalf("could not download archive url: %v", err)
 	}
@@ -168,43 +159,4 @@ func readZipFileContents(zf *zip.File) ([]byte, error) {
 	}
 	defer f.Close()
 	return io.ReadAll(f)
-}
-
-func getLatestFormsUrl(retry int) (string, error) {
-	if retry <= 0 {
-		return "", fmt.Errorf("retry limit exceeded")
-	}
-
-	req, err := http.NewRequest("GET", FormsInfoURL, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("User-Agent", "pat-forms-scraper")
-	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		log.Printf("unexpected status code: %d", resp.StatusCode)
-		time.Sleep(time.Second)
-		return getLatestFormsUrl(retry - 1)
-	}
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("can't read winlink forms version page: %w", err)
-	}
-	bodyString := string(bodyBytes)
-
-	// Scrape for the version and download link
-	hrefRe := regexp.MustCompile(`<a href="(https://.+)">\s*Standard_Forms - Latest Version\s*</a>`)
-	hrefMatches := hrefRe.FindStringSubmatch(bodyString)
-	if len(hrefMatches) < 2 {
-		return "", errors.New("can't scrape the version info page, HTML structure may have changed")
-	}
-	return html.UnescapeString(hrefMatches[1]), nil
 }
